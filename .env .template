@@ -1,0 +1,14 @@
+
+
+
+DB_PASSWORD=MySecr3tPassWord3@
+DB_NAME=TesloLoDB
+
+#Preparemos las variable de entoro.
+ # instalemaos  yarn add @nestjs/config
+
+ # y en los app.modulos.ts ; coloc en  import  [ComfigModule.forRoot()]
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+

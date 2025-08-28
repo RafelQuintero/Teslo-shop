@@ -1,0 +1,37 @@
+# Versión de la sintaxis de docker-compose
+version: '3'
+
+services:
+  # Servicio de base de datos PostgreSQL
+  db:
+    # Imagen oficial de Postgres en la versión 14.3
+    image: postgres:14.3 # Imagen oficial de Postgres en la versión 14.3
+
+    # Reiniciar el contenedor si se detiene
+    restart: always
+
+    # Mapeo de puertos:
+    # "5432:5432" significa:
+    # - El primer 5432 es el puerto de tu máquina (host)
+    # - El segundo 5432 es el puerto dentro del contenedor
+
+    ports:
+      - '5432:5432' # Puerto local : puerto del contenedor
+
+    # Variables de entorno para inicializar PostgreSQL
+    # Se toman desde el archivo .env (ejemplo: DB_PASSWORD, DB_NAME)
+
+    environment: # Variables de entorno definidas en el archivo .env
+      POSTGRES_PASSWORD: ${DB_PASSWORD} # Clave del usuario postgres
+      POSTGRES_DB: ${DB_NAME} # Nombre de la base de datos inicial creado al arrancar.
+
+    # Nombre que tendrá el contenedor (más fácil de identificar en docker ps)
+    container_name: teslodb # Nombre que tendrá el contenedor
+
+    # Volumen para persistir los datos de la base de datos
+    # - La carpeta ./postgres (en tu máquina) se enlaza con
+    #   /var/lib/postgresql/data (dentro del contenedor)
+    # - Así los datos no se pierden si el contenedor se borra
+
+    volumes:
+      - ./postgres:/var/lib/postgresql/data # Persistencia de datos en carpeta local
