@@ -6,7 +6,7 @@
 
 1.- Clonar proyecto
 
-2.- Reitale los node_module
+2.- Reinstale los node_module
 
 ```
     yarn install
