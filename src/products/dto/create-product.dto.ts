@@ -10,7 +10,6 @@ import {
   IsNumber,
   IsOptional,
   IsPositive,
-  isString,
   IsString,
   MinLength,
 } from 'class-validator';
@@ -58,5 +57,11 @@ export class CreateProductDto {
   @IsArray()
   @IsOptional()
   tags?: string[]; //es opcional y es un arreglo del tipo string
+
+  //creo el dto para las imagenes
+  @IsString({ each: true }) // con {each:true} estoy obligando que cada valor de ese arreglo debe ser un string
+  @IsArray()
+  @IsOptional()
+  images?: string[]; //es opcional(Puede que los envie o nolov envie) y es un arreglo del tipo string
 }
 //! Este dto lo uitlizaremos para insertar en la base de datos.

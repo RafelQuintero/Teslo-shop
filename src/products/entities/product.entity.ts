@@ -1,3 +1,4 @@
+import { ProductImage } from '../product-image.entity';
 //*Defiición de  entity: es la  representación del objeto "export class Product{}"en la base de datos ,
 // //*representado  en una  tabla. Mdeidante el tyeORM
 //TODO: Definicimes:
@@ -14,10 +15,11 @@ import {
   BeforeUpdate,
   Column,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-@Entity()
+@Entity({ name: 'products' })
 export class Product {
   @PrimaryGeneratedColumn('uuid') //* Quiero manejar el id como un uuid y es del tipo string
   id: string;
@@ -104,4 +106,21 @@ export class Product {
       .replaceAll(' ', '_') //Lo remplazo los espacios por guion bajo
       .replaceAll("'", ''); //El apostrofe (')lo sustityo por nada'
   }
+  //relacion de  un producto con muchas imagenes
+  //images
+  @OneToMany(
+    //debo decirle como me voy a
+    // conectar con la otra tabla de imagenes
+    () => ProductImage, //Tipo de relación regresa una instancia de ProductImage
+    (productImage) => productImage.product, //Relacion inversa
+    { cascade: true, eager: true }, //Si se borra un producto se borran sus imagenes
+    //con el eager: true, cada vez que yo consulte un producto
+    //  automaticamente me traiga sus imagenes
+    //pro si eager: false, no me trae las imagenes automáticamente.
+  )
+  images?: ProductImage[]; //Un producto tiene muchas imagenes
 }
+
+//todo: Primero crarermos la entidad de las imagenes
+//todo;Ahora venamos como usaremos nuestras images
+//todo:  cuando se reciba de esta manera

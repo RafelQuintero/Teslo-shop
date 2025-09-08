@@ -35,7 +35,10 @@ export class ProductsController {
 
   @Get(':term')
   findOne(@Param('term') term: string) {
-    return this.productsService.findOne(term);
+    //todo: Cambiamos el metodo que se llama en el servicio
+    //Para que utilice el metodo que aplane el resultado, es decir muestro lo que necesito.
+
+    return this.productsService.findOnePlain(term);
   }
 
   @Patch(':id')

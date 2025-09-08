@@ -8,10 +8,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { Repository } from 'typeorm';
-import { Product } from './entities/product.entity';
+import { DataSource, Repository } from 'typeorm';
+//import { Product } from './entities/product.entity'; //Comentamos esta linea
+//  porque importamos Product y ProductImage en la linea 16 , ya que estan en archivo index.ts
 import { PaginationDto } from '../common/dtos/pagination.dto';
 import { validate as isUUID } from 'uuid';
+import { ProductImage, Product } from './entities';
 
 @Injectable()
 export class ProductsService {
@@ -36,7 +38,18 @@ export class ProductsService {
   constructor(
     //Aqui inyectamos el repositorio
     @InjectRepository(Product) // aqui inyectanos la indentidad, colocado en el parametro llamodo: "Product", que es nuestra identidad.
-    private readonly productRepository: Repository<Product>, //se crea una propiedad "produtRepository" // y es de tipo "Repository" // y el tipo de dato que manejará es" <Product>"
+    private readonly productRepository: Repository<Product>, //se crea una propiedad "produtRepository"
+    // y es de tipo "Repository"
+    // y el tipo de dato que manejará es" <Product>"
+
+    //?Creamos La inyeccion de dependencia
+    //? para poder utilizar el repositorio de ProductImage y poder
+    //? guardar las imagenes del producto.
+    @InjectRepository(ProductImage)
+    private readonly productImageRepository: Repository<ProductImage>,
+
+    //inyeccion del repositorio de dataSource para manejar las transacciones
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(createProductDto: CreateProductDto) {
@@ -57,13 +70,40 @@ export class ProductsService {
       // .toLowerCase().replaceAll(' ', '_').replaceAll("'", '');
 
       //todo: Fin de lo que se comentó
+      //? Desestructuramos el dto
+      const { images = [], ...productDetails } = createProductDto; //desestructuramos el dto,
+      //  es decir ,extraemos las imagenes del dto,
+      // y le asignamos un valor por defecto que es un arreglo vacio
+      //  y el resto de las propiedades las agrupo en una constante llamada productDetails
+      //por medio del operador rest (...).
 
-      const product = this.productRepository.create(createProductDto); //Creamos el producto
+      //?
+      //todo:  Cuando se crea el producto con las images,
+      // todo: esta imagenes  debe ser una instancia de la entidad ProductImagepara que no sea un producto vacio
+      const product = this.productRepository.create({
+        ...productDetails, //*exparso cada una de las propiedades
+        // * que vienen en el productDetails por medio del operador spred (...).
+        images: images.map((image) =>
+          this.productImageRepository.create({ url: image }),
+        ),
+        //*image:[],  Es un arreglo vacio , pero si hay imagenes,hagamos lo siguiente:
+        // * Si hay imagenes, las mapeamos "map" y por cada imagen creamos una instancia de ProductImage
+        // * y le asignamos la url de la imagen.
+        // * estas debe ser una instancia de la entidad ProductImage (de esa tabla),
+        // * Porque ahi tienen el: "id","url" y el  "productId"
+      }); //Creamos el producto
 
-      await this.productRepository.save(product); //GUardamos el producto creado y lo copio en la base de datos.
+      await this.productRepository.save(product); //GUardamos el producto creado  y tambien susimagenes
+      //  y lo copio en la base de datos.
 
       //Devolvemos  el producto creado
-      return product;
+      return { ...product, images: images }; //devolvemos el producto
+      // devolvemos el producto, pero las imagenes las devolvemos como un arreglo de string
+      // y no como un arreglo de objetos ProductImage
+      // porque en el dto  las imagenes vienen como un arreglo de string.
+      //y no como un arreglo de objetos ProductImage.
+      //por eso hacemos la desestructuracion del product y le asignamos las imagenes
+      //como vienen en el dto que es un arreglo de string.
     } catch (error) {
       //*Indiqeumos el tipo de error que está ocurriendo utilzando logger, para saber
       // *  mandar el error y en que servico de la clase ocurrio.
@@ -87,12 +127,17 @@ export class ProductsService {
       const products = await this.productRepository.find({
         take: limit, //toma toda la cantidad de datos que le indiquemos en limit
         skip: offset, //saltate los datos que le indiquemos en offset
-        //TODO: Relaciones
+        relations: { images: true }, //para que me traiga las imagenes relacionadas al producto
       });
       if (products.length === 0)
         throw new NotFoundException('No products found');
 
-      return products; //    `This action returns all products`;
+      return products.map(({ images, ...rest }) => ({
+        //tambien podemos hacer la desestructuracion en de colocar product
+        ...rest, //se sustituyo product por rest
+        images: images?.map((img) => img.url) || [], //si product.images es
+        //  undefined o null, devuelve un arreglo vacio
+      })); //    `This action returns all products pero los quiero apanados`;
     } catch (error) {
       this.handDBExceptiion(error);
     }
@@ -112,24 +157,63 @@ export class ProductsService {
         ? await this.productRepository.findOneBy({ id: term })
         : //: await this.productRepository.findOneBy({ slug: term });
           await this.productRepository
-            .createQueryBuilder('product') //es el alias de la tabla/entidad en la
+            .createQueryBuilder('product') //es el alias de la tabla/entidad en la  bae de datos.
             .where('UPPER(title) =:title or slug =:slug', {
               title: term.toUpperCase(), //hacemos la busqueda del titulo, que es el argumento que se le pasa
               //  sin importar mayusculas o minusculas
               slug: term.toLowerCase(), //hacemos la busqueda del slug que es el argumento que se le pasa
               //  sin importar mayusculas o minusculas
             })
+            .leftJoinAndSelect('product.images', 'productImages') //Hacemos un left join con la tabla productImages
+            //  para cargar las imagenes
+
             .getOne(); //getOne porque solo me va a devolver un registro,porque lo que busco es uno solo.
 
       if (!product)
         throw new NotFoundException(`Product with term: ${term} not found`);
       return product; //`This action returns a #${term} product` grantizandole que nunca será null con !;
     } catch (error) {
+      //? Si el error es NOtFoundException. lo volvemos a lanzar patar que Nest devuelva
+      //? 404
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      //? 👇 Si es cualquier otro error (DB, lógica, etc),
+      // ?lo manejamos como 500
       this.handDBExceptiion(error);
     }
   }
 
+  //todo: Debemmos aplanar el reultado. es decir regresar solo lo que necesito que se muestre. en el resultado
+  //todo: Por lo que crearemos un metodo privado que se encargue de aplanar el resultado.
+  //todo: Lo pudemos uitlizar para hacer la buqueda de un solo producto
+  // todo: y tambien para la busqueda de todos los productos.
+  async findOnePlain(term: string) {
+    //Para solucionar el problema de que las imagenes me las devuelve como un arreglo de objetos
+    //  y no un undefine- o null, debemos ser expicito que si no consigue me envie el error
+    //que lo causo.
+    const product = await this.findOne(term);
+    if (!product)
+      throw new NotFoundException(`Product with term: ${term} not found`);
+
+    const { images = [], ...rest } = product; //desestructuramos el producto
+    // y le asignamos un valor por defecto que es un arreglo vacio
+    //  y el resto de las propiedades las agrupo en una constante llamada rest
+    //por medio del operador rest (...).
+    //devolvemos el producto aplanado.
+    return {
+      ...rest,
+      images: images.map((imge) => imge.url),
+    };
+  }
+
   async update(id: string, updateProductDto: UpdateProductDto) {
+    //TODO: Si actualizamos las images de un producto, debemos eliminar las imagenes que ya tiene.
+    //todo. Para hacer esto tenemos que tener encuenta que  al  ejecutar dos tansacciones que no
+    // todo: interconectadas entre si ,
+    //todo: la eliminacion es una y la otra es la actualizacion.
+    //todo: si una de las dos falla , debo indcarle al usuario que salio mal.
+    //todo:conclision: las dos no deben fallar. y lo debo hacer  medante el query runner.
     // se debe revisar el  @BeforeUpdate() en la entidad product.entity.ts
     //El id es string porque es uuid
     //preload() me permite cargar un registro existente y actualizarlo con nuevos valores.
@@ -145,43 +229,82 @@ export class ProductsService {
     //si no viene el slug, no hago nada, porque ya lo hace el @BeforeUpdate() en la entidad product.entity.ts
     //si viene el slug, lo formateo como debe ser.
 
+    //?Lo primero que voy hacer es extraer las
+    const { images, ...toUpdate } = updateProductDto;
+
     const product = await this.productRepository.preload({
       //devuelve una promesa, por lo que debe  tener un await
       //preload() me permite cargar un registro existente y actualizarlo con nuevos valores.
       id: id,
-      ...updateProductDto,
+      ...toUpdate,
     });
-    //chequemos si el producto existe es decir; si preload no encontro la entidad, devuelve un undefined
 
-    if (!product)
-      throw new NotFoundException(`Product with id ${id} not found`);
-    //si el producto existe, lo guardamos
+    //chequemos si vienen images por medio de qury Runner() creremos la logica
+    const cueryRunner = this.dataSource.createQueryRunner(); //esto es un objeto que tiene que conocer la cadena de conexion
+    await cueryRunner.connect(); //establecemos la conexion
+    await cueryRunner.startTransaction(); //iniciamos la transaccion
+
     try {
-      await this.productRepository.save(product); //Actualizemos el producto  ya que devolvio una promesa.
-      return product;
+      if (!product)
+        throw new NotFoundException(`Product with id ${id}not foaund`); // Se hioz esta valdiacion para suprimir
+      // el error de undefine de typeScript
+
+      if (images) {
+        //con eeste if estoy obligando que venga el producto
+        //si vienen imagenes, debo eliminar las que ya tiene el producto
+        //? Eliminemos las imagenes que ya tiene el producto
+        await cueryRunner.manager.delete(ProductImage, {
+          product: { id: id }, //este id es el id del producto
+        }); //eliminamos las imagenes que ya tiene el producto
+        //? Ahora agreguemos las nuevas imagenes
+        product.images = images.map((image) =>
+          this.productImageRepository.create({ url: image }),
+        ); //creamos las nuevas imagenes
+        //? y se las asignamos al producto
+      }
+      //Imapcteos la base de datos guardando el producto cn la nuevas imagenes
+      await cueryRunner.manager.save(product); //guardamos el producto con las nuevas imagenes pero no loo hace todavia
+
+      // await this.productRepository.save(product); //Actualizemos el producto  ya que devolvio una promesa.
+      await cueryRunner.commitTransaction(); //si todo sale bien hace el commmit
+      //await cueryRunner.release(); //hace los cambios, liberaamos la conexxion :lo clcoque en finally
+      return this.findOnePlain(id); //sustituios  product; //si queremos mandar solo lo que se quiere la aplanamos por:
+      // this.FindOnePlain()
     } catch (error) {
+      // ?👇 Si el error es un NotFoundException, lo volvemos a lanzar para que Nest devuelva 404
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      await cueryRunner.rollbackTransaction(); // rebirtio todo lo que se queir hacer ya que hubo um error.
+      //await cueryRunner.release(); //libera el queryRunner. lo coloque en finally
+
+      //Si ocurre un error , me envia  la informacion del error.que no sea un NotFoundException
       this.handDBExceptiion(error);
+    } finally {
+      await cueryRunner.release();
     }
   }
 
   async remove(id: string) {
-    //Comntamos la liniea de abajo
+    //todo: Queremos que cunado se borre u producto se borre las imagemes de este producto tambien,
+    //todo; esto es lo que se llama borrar en cascada.
+    //Comentamos la liniea de abajo
     // const product = await this.productRepository.findOneBy({ id: id });
 
     //Para hacer la buqueda del procuct, utilizando el método previnomente creado findOne(id)
+
     const product = await this.findOne(id); //usamos el metodo findOne que ya tiene la logica de busqueda y el manejo de errores.
 
-    if (!product)
-      throw new BadRequestException(`Product with id ${id} not found`);
+    if (!product) {
+      throw new NotFoundException(`the Product with that ${id} not found `);
+    }
+    // throw new NotFoundException(`Product with id ${id} not found`);
 
     await this.productRepository.remove(product);
     return `This action removes a #${id} product`;
   }
-  //? Para buscar el producto por el tutulo utilizaremosn  el QueryBuilder de typeORM
-  //? que nos permite hacer consultas mas complejas.
 
-  //* Crearemos un metodo apra manejar los tipos de errore que ocurran.
-  // * Este metodo solo se podrá utilzar en esta clase ya que declara privado.
+  //!++++++++++++++++++++++++++
 
   private handDBExceptiion(error: any) {
     if (error.code === '23505') throw new BadRequestException(error.detail);
@@ -189,5 +312,29 @@ export class ProductsService {
     throw new InternalServerErrorException(
       'Unexpected error, check server logs',
     );
+  }
+
+  //!++++++++++++++++++++++++++++
+
+  //?✅ PROCEIMIENTO BASTANTE DESTRUCTIVO.
+  //?  crearemos un metodo; que si estamos en desarrollo lo utilzaremos , pero si estamos
+  //? en produccion  no lo utlizaremos
+  //?si alguna condicion extra se aplica lo podemos utilzar.
+
+  // ?✅ TODO: Esto la voy a utilzar cuando creo la semilla para que me borre
+  //? ✅ TODO:   prviamente todas la base de datos
+  async deleteAllProducts() {
+    //cramos una vinstancia llamada cuery
+    const cuery = this.productRepository.createQueryBuilder('product');
+
+    try {
+      //si se boora un producto,, todos los demas tambien se van a borrar (esto es lo que se refiere en CASCADA) cascada
+      return await cuery
+        .delete()
+        .where({}) //se le está diciendo que seleccione todos los productos
+        .execute();
+    } catch (error) {
+      this.handDBExceptiion(error);
+    }
   }
 }
