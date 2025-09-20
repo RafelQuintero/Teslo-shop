@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -11,9 +11,15 @@ async function bootstrap() {
     user: process.env.DB_USERNAME,
     pass: process.env.DB_PASSWORD,
     db: process.env.DB_NAME,
+    id_port: process.env.PORT,
   });
 
   //************* */
+
+  //********** veamo que se vea la presentacion mejor en forma  de donde esá corriendo el puerto*/
+  const logger = new Logger('bootstrap');
+
+  //********** */
 
   const app = await NestFactory.create(AppModule);
 
@@ -35,6 +41,6 @@ async function bootstrap() {
   //********* */
 
   await app.listen(process.env.PORT ?? 3000);
-  console.log(`Runing in the PORT: 3000`);
+  logger.log(`Runing in the PORT:${process.env.PORT} `); //* hemos sustituido el console por logger
 }
 bootstrap();

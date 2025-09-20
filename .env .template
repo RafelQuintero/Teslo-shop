@@ -1,7 +1,7 @@
 
 
 
-DB_PASSWORD=MySecr3tPassWord3@
+DDB_PASSWORD=MySecr3tPassWord3@
 DB_NAME=TesloLoDB
 
 #Preparemos las variable de entoro.
@@ -11,4 +11,7 @@ DB_NAME=TesloLoDB
 DB_HOST=localhost
 DB_PORT=5432
 DB_USERNAME=postgres
+
+PORT=3000
+HOST_API=http://localhost:3000/api
 
