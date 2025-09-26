@@ -34,16 +34,16 @@ docker-compose up -d
 
 ```
 
-6.- Ejecutar SEED para llenar la DB
-
-```
-http://localhost:3000/api/seed
-
-```
-
-7.- Levantar el proyecto en modo de desarrollo
+6.- Levantar el proyecto en modo de desarrollo
 
 ```
 yarn star:dev
+
+```
+
+7.- Ejecutar SEED para llenar la DB
+
+```
+http://localhost:3000/api/seed
 
 ```

@@ -6,6 +6,7 @@ import { ProductsModule } from './products/products.module';
 import { CommonModule } from './common/common.module';
 import { SeedModule } from './seed/seed.module';
 import { FilesModule } from './files/files.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { FilesModule } from './files/files.module';
     CommonModule,
     SeedModule,
     FilesModule,
+    AuthModule, //Cargo  el modulo de auteticacion de auth
   ], // Listo ya podemos manejar las variable de entorno establecidas.
   providers: [],
 })
