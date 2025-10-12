@@ -1,3 +1,4 @@
+import { User } from '../../auth/entities/user.entity';
 import { ProductImage } from '../product-image.entity';
 //*Defiición de  entity: es la  representación del objeto "export class Product{}"en la base de datos ,
 // //*representado  en una  tabla. Mdeidante el tyeORM
@@ -15,6 +16,7 @@ import {
   BeforeUpdate,
   Column,
   Entity,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -119,8 +121,22 @@ export class Product {
     //pro si eager: false, no me trae las imagenes automáticamente.
   )
   images?: ProductImage[]; //Un producto tiene muchas imagenes
+
+  //**************/
+  @ManyToOne(
+    () => User, //el primeer argumento relacion la tabla Product con la tabl User
+
+    (user) => user.product,
+    { eager: true }, //indiqo que carge el usuario que creo el producto.
+  ) //el segundo argumento relaciono  un user (ususrio) con la taba product.
+  user: User;
+
+  //****** */
 }
 
 //todo: Primero crarermos la entidad de las imagenes
 //todo;Ahora venamos como usaremos nuestras images
 //todo:  cuando se reciba de esta manera
+//TODO: en la proxima clase creareons  el usuario que cargo o crea el producto esto se hace
+//todo: en los entity de producto y usuario se debe hacer la ralacion de dichas tablas.
+//todo: un seed que nos permita reconstruir las tabla inclusive la de los  usuarios,

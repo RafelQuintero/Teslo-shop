@@ -7,8 +7,12 @@ import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import { UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 
+//todas las estrategias en nestjs son servicios (providers) por lo que deben ser decoradas con @Injectable()
+//el JwtStrategy debe ser utilizado en el modulo de auth (auth.module.ts) por lo que debe ser exportado en el array de providers
+
+@Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   // 👉 IMPORTANTE:  debo de implemntra una forma de expandir la vadilacion de JWT
 
@@ -52,11 +56,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     new UnauthorizedException();
 
     //Extraemos el correo electronico del payload
-    const { email } = payload;
+    const { id } = payload; //debemos sustituiur el email por el id del usuario en una app real
 
     //COnsultemos la base de datos para ver si el usuario existe y esta activo
     //  si existe retornamos el usuario, si no existe lanzamos una excepcion
-    const user = await this.userRepository.findOneBy({ email }); //buscamos el usuario por su correo electronico en DB
+    const user = await this.userRepository.findOneBy({ id }); //buscamos el usuario por su correo electronico en DB//sera susttituido por el id del usuario en una app real
 
     if (!user)
       throw new UnauthorizedException(
@@ -66,7 +70,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user.isActive)
       throw new UnauthorizedException('User is inactive - User is not active');
 
-    return user; //Lo que se retorne en el validate() se va a guardar en el request del usuario
+    const { password, ...userData } = user; //extraemos el password del usuario para no retornarlo
+
+    //Mostremos en consola si el usrurio está activo on no lo está.
+    //console.log({ userData });
+
+    return user; //Lo que se retorne en el validate() se va a guardar en el request del usuario para ser utilizado en los controladores
     //  y se podra acceder a el en los controladores (req.user)
     //  y en los guards (req.user)
     //  y en los decorators (req.user)

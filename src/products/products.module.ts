@@ -1,5 +1,6 @@
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Module } from '@nestjs/common';
+import { AuthModule } from './../auth/auth.module';
 import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 //TODO:  Como tengo dos imprtaciones  de un mismo archivo; product-image.entity.ts , puedo hacer
@@ -17,6 +18,7 @@ import { Product, ProductImage } from './entities';
       Product,
       ProductImage, // 👉 IMPORTANTE: Usualmente tambien esto se importa para utilizar ProductReposiry u ProdcutImageReposory
     ]),
+    AuthModule,
   ],
   exports: [ProductsService, TypeOrmModule],
 })

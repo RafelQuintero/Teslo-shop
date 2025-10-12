@@ -14,6 +14,7 @@ import { DataSource, Repository } from 'typeorm';
 import { PaginationDto } from '../common/dtos/pagination.dto';
 import { validate as isUUID } from 'uuid';
 import { ProductImage, Product } from './entities';
+import { User } from '../auth/entities/user.entity';
 
 @Injectable()
 export class ProductsService {
@@ -52,7 +53,9 @@ export class ProductsService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async create(createProductDto: CreateProductDto) {
+  async create(createProductDto: CreateProductDto, user: User) {
+    //le agregamo com 2do. parametro un user del tipo User
+    //Ya que debe crear el producto y el usuario que lo creo
     //Debe ser asyncronio porque la interacion con la base de daatos son asyncronos.
 
     try {
@@ -86,6 +89,7 @@ export class ProductsService {
         images: images.map((image) =>
           this.productImageRepository.create({ url: image }),
         ),
+        user: user, //tambien tengo que especificaar el user que creo el product con su images
         //*image:[],  Es un arreglo vacio , pero si hay imagenes,hagamos lo siguiente:
         // * Si hay imagenes, las mapeamos "map" y por cada imagen creamos una instancia de ProductImage
         // * y le asignamos la url de la imagen.
@@ -207,7 +211,7 @@ export class ProductsService {
     };
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto) {
+  async update(id: string, updateProductDto: UpdateProductDto, user: User) {
     //TODO: Si actualizamos las images de un producto, debemos eliminar las imagenes que ya tiene.
     //todo. Para hacer esto tenemos que tener encuenta que  al  ejecutar dos tansacciones que no
     // todo: interconectadas entre si ,
@@ -228,7 +232,12 @@ export class ProductsService {
     // }
     //si no viene el slug, no hago nada, porque ya lo hace el @BeforeUpdate() en la entidad product.entity.ts
     //si viene el slug, lo formateo como debe ser.
-
+    //* Lo primero es hacer una notificcacion de nestjs no interpreta eso como
+    //* como un JSON  produciendo que updateProductDto (que es el body es su defecto)
+    //*devolviendo este el el valor de undefined.
+    //* y el mensaje: (El cuerpo de la solicitud (body) está vacío o mal formado)
+    if (!updateProductDto)
+      throw new BadRequestException('The request body is empty or malformed.');
     //?Lo primero que voy hacer es extraer las
     const { images, ...toUpdate } = updateProductDto;
 
@@ -262,6 +271,8 @@ export class ProductsService {
         ); //creamos las nuevas imagenes
         //? y se las asignamos al producto
       }
+      //Agergamos el usuario  al producto que se actualizó  para que despues este lo salve o  guarde la informcio para sua actualizacion
+      product.user = user;
       //Imapcteos la base de datos guardando el producto cn la nuevas imagenes
       await cueryRunner.manager.save(product); //guardamos el producto con las nuevas imagenes pero no loo hace todavia
 

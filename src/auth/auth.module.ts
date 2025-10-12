@@ -6,10 +6,11 @@ import { User } from './entities/user.entity';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, JwtStrategy],
   imports: [
     ConfigModule, //importamos el ConfigModule para manejar las variables de entorno
     TypeOrmModule.forFeature([User]), //Se agregó para hacer la  creacion de las tabla e la DB.
@@ -33,13 +34,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         };
       },
     }),
-
-    // JwtModule.register({
-    //   secret: process.env.JWT_SECRET, //esto debe ser una variable de entorno
-    //   signOptions: { expiresIn: '2h' }, //el token expira en 2 horas
-    // })
   ],
-  exports: [TypeOrmModule], // P<ra que el User sea usado fuera de este módulo.
+  exports: [TypeOrmModule, JwtStrategy, PassportModule, JwtModule], // P<aa que el User pueda uasrlo fuera de este módulo.
 })
 export class AuthModule {}
 
