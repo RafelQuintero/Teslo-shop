@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsOptional, IsPositive, Min } from 'class-validator';
 
@@ -6,12 +7,19 @@ export class PaginationDto {
   //Recuerde que estos dto no transforman la data, solo validan.
   //Para transformar la data, se debe usar un pipe de transformacion
   //Es decir si llega un string '10' lo transforme a number 10
-
+  @ApiProperty({
+    default: 10,
+    description: 'how many rows do you need',
+  })
   @IsOptional()
   @IsPositive()
   @Type(() => Number) //Transforma a number el valor que llega por query
   limit?: number;
 
+  @ApiProperty({
+    default: 0,
+    description: 'how many rows do you want to skip',
+  })
   @IsOptional()
   @Min(0)
   @Type(() => Number) //Transforma a number el valor que llega por query

@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Query,
 } from '@nestjs/common';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -17,7 +18,9 @@ import { PaginationDto } from './../common/dtos/pagination.dto';
 import { Auth, GetUser } from '../auth/decotertors';
 import { User } from '../auth/entities/user.entity';
 import { ValiRoles } from '../auth/interfaces';
+import { Product } from './entities';
 
+@ApiTags('Products') //Cin es este controlador el agrupa todo lo relacionado con Products, ya lo habia hecho por defecto.
 @Controller('products')
 //Si se quiere que un ususrio utilice cualquier de estas rutas,este debe esta autorizado con el decorado:que se creo. en este lugar
 //pero no quiero que esto sea así. por lo que el decorador @Autch() lo cometaré, pero solo lo cocare donde lo necesito y que tipo de autorizacion.
@@ -27,6 +30,19 @@ export class ProductsController {
 
   @Post()
   @Auth() //quitemos ValiRoles.admin para que sea auorizado cualquier usuario
+  @ApiResponse({
+    status: 201,
+    description: 'Product was created',
+    type: Product,
+  }) //me pide opciones en el argunemtos , estas opciones sera un  objeto que me indique el status, descripcion del status, etc
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request', //peticion no es correcta.
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbiden, Token related', //el token no fue proporcionado.
+  })
   //Nececito especificar aqui el usuario que creo el porducto, por los momnetos cualquier user. Lo hago con un decoardorque ya tengo llamado @GetaUser()
   create(
     @Body() createProductDto: CreateProductDto,
@@ -37,6 +53,7 @@ export class ProductsController {
   //TODO: se creara un un nuevo dot mediante un modulo, para que siempre valla agurpadosen estos
   // todo: para crear la paginacion de los productos para ejecuatr el get por paginas,
   //recuerde que la importcpn del Query viene de nestjs/common
+
   @Get()
   //Aqui no necesita estar autorizado, cualquierra puede ver el producto.
   findAll(@Query() paginationDto: PaginationDto) {
