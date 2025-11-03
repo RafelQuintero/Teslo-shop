@@ -7,6 +7,7 @@ import { CommonModule } from './common/common.module';
 import { SeedModule } from './seed/seed.module';
 import { FilesModule } from './files/files.module';
 import { AuthModule } from './auth/auth.module';
+import { MessagesWsModule } from './messages-ws/messages-ws.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AuthModule } from './auth/auth.module';
     SeedModule,
     FilesModule,
     AuthModule, //Cargo  el modulo de auteticacion de auth
+    MessagesWsModule,
   ], // Listo ya podemos manejar las variable de entorno establecidas.
   providers: [],
 })
