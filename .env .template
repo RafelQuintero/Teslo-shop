@@ -1,5 +1,5 @@
-
-
+  #varible  entorno para  decir que estamos en desarrollo.
+STAGE=dev
 
 DDB_PASSWORD=MySecr3tPassWord3@
 DB_NAME=TesloLoDB

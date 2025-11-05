@@ -59,7 +59,7 @@ async function bootstrap() {
 
   //?¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨
 
-  await app.listen(process.env.PORT ?? 3000);
-  logger.log(`Runing in the PORT:${process.env.PORT} `); //* hemos sustituido el console por logger
+  await app.listen(process.env.PORT || 3000);
+  logger.log(`Runing in the PORT:${process.env.PORT || 3000} `); //* hemos sustituido el console por logger
 }
 bootstrap();
